@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "axios": "^1.6.7",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
@@ -25,9 +26,9 @@
   },
   "scripts": {
     "start": "nodemon server.js",
-     "migrate:make": "knex migrate:make",
-  "migrate:latest": "knex migrate:latest",
-  "migrate:rollback": "knex migrate:rollback"
+    "migrate:make": "knex migrate:make",
+    "migrate:latest": "knex migrate:latest",
+    "migrate:rollback": "knex migrate:rollback"
   },
   "name": "backend",
   "version": "1.0.0",

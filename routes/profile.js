@@ -6,7 +6,11 @@ const {
   ContactUpdate,
   fetchInformation,
   AddUserDetails,
-  UpdateUserDetails
+  UpdateUserDetails,
+  fetchLoopInformation,
+  getEditData_HomeAppliance,
+  update_HomeAppliance,
+  upload_profileImg
     
  } = require('../controllers/profileController');
 
@@ -20,7 +24,7 @@ const {
     let destinationPath = './assets'; // Specify the base directory for assets
 
     if (isImage(file)) {
-      destinationPath += '/SndRcvdImage'; // If it's an image, use SndRcvdImage folder
+      destinationPath += '/UserProfileImage'; // If it's an image, use SndRcvdImage folder
     } 
     else if (isPDF(file)) {
       destinationPath += '/UserResume'; // If it's a PDF, use SndRcvdPDF folder
@@ -99,6 +103,10 @@ router.post('/updateContact',ContactUpdate);
 router.post('/fetchdetails',fetchInformation);
 router.post('/addDetails',upload.single('resume'),AddUserDetails);
 router.post('/updateDetails',UpdateUserDetails);
+router.post('/FetchLoopDetails',fetchLoopInformation);
+router.post('/HmApplianceData',getEditData_HomeAppliance);
+router.post('/updateHAD',update_HomeAppliance);
+router.post('/upload_profile_img',upload.single('profile_image'),upload_profileImg);
 
 
 module.exports = router;

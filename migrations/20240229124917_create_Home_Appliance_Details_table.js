@@ -6,8 +6,10 @@ exports.up = function(knex) {
       table.string('Appliance_type',4000).nullable();
       table.string('brand',1000).nullable();
       table.string('model',1000).nullable();
-      table.string('warranty_period',1000).nullable();
+      table.string('start_period',1000).nullable();
+      table.string('end_period',1000).nullable();
       table.string('description',4000).nullable();
+      table.string('date_of_purchase',4000).nullable();
       
       
       

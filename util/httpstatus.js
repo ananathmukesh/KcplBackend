@@ -34,6 +34,13 @@ class httpstatus {
       data: data,
     });
   }
+  badRequestResponse(data) {
+    return JSON.stringify({
+        code: "400",
+        status: "bad_request",
+        data: data,
+    });
+}
   notFoundResponse(data) {
     return JSON.stringify({
       code: "404",
