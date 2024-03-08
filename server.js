@@ -9,7 +9,7 @@ const bodyParser = require("body-parser");
 require('dotenv').config();
 const db = require('./database/db');
 const profilerouter = require("./routes/profile");
-const authrouter = require("./routes/Auth");
+const authrouter = require("./routes/auth");
 const path = require('path');
 const io = require('./util/webSocket');
 const io1 = require('./util/WebsocketVideocall');
