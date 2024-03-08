@@ -1,29 +1,17 @@
-// const jwt = require('jsonwebtoken');
 
-// const authenticateToken = (req, res, next) => {
-//   const token = req.headers['authorization'];
-//   if (token == null) return res.sendStatus(401);
-
-//   jwt.verify(token, process.env.ACTIVATION_SECRET, (err, user) => {
-//     if (err) return res.sendStatus(403);
-//     req.user = user;
-//     next();
-//   });
-// };
-
-// module.exports = authenticateToken;
 
 
 const jwt = require("jsonwebtoken");
 
 const sendToken = (user, statusCode, res) => {
-  users = {
-    id: user.id,
-    email: user.email,
-  };
-  const token = jwt.sign(users, process.env.ACTIVATION_SECRET, {
+  
+  const token = jwt.sign(user, process.env.ACTIVATION_SECRET, {
     expiresIn: "1h",
   }); 
+
+  console.log('token ');
+  
+
   const options = {
     expires: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes in milliseconds
     httpOnly: true,
@@ -34,8 +22,11 @@ const sendToken = (user, statusCode, res) => {
     message: "Successfully Loged",
     success: true,
     code:200,
-    user,
-    token,
+    user:{
+      user:user,
+      token:token
+    },
+    
   });
 };
 

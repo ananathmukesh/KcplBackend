@@ -10,12 +10,14 @@ const {
   fetchLoopInformation,
   getEditData_HomeAppliance,
   update_HomeAppliance,
-  upload_profileImg
+  upload_profileImg,
+  AddclgSclDeatils
     
  } = require('../controllers/profileController');
 
  const path = require('path');
  const multer = require('multer');
+ const AuthToken = require('../middleware/auth');
 
  
 
@@ -97,7 +99,7 @@ function isVideo(file) {
 const upload = multer({ storage: storage });
 
 
-router.post('/contactinformation',contactInformation);
+router.post('/contactinformation',AuthToken,contactInformation);
 router.post('/fetchContactInformation',getContactInformation);
 router.post('/updateContact',ContactUpdate);
 router.post('/fetchdetails',fetchInformation);

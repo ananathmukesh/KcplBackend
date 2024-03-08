@@ -43,7 +43,7 @@ const contactInformation = async (req, res) => {
       plotnumber,
       plotname
     } = req.body;
-
+        console.log('ContactInformation',req.body);
        db("ContactInformation")
       .insert({
         userid:userid,
@@ -224,6 +224,53 @@ const update_HomeAppliance = async (req, res) => {
 };
 
 
+const AddclgSclDeatils = async() => {
+  try {
+    const { schoolDetails,collageDetails,authid } = req.body;
+    if (schoolDetails && schoolDetails.length > 0) {
+      await db('SchoolDetails').insert(
+        schoolDetails.map((data) => ({
+          userid:authid,
+          scl_qualification: data.scl_qualification,
+          skiscl_specializationlls: data.scl_specialization,
+          scl_start: data.scl_start,
+          scl_end: data.scl_end,
+          scl_name: data.scl_name,
+          scl_percentage: data.scl_percentage
+        }))
+      );
+
+      console.log('school added successfully');
+    }
+
+
+    if (collageDetails && collageDetails.length > 0) {
+      await db('CollageDetails').insert(
+        collageDetails.map((data) => ({
+          userid:authid,
+          clg_course: data.clg_course,
+          clg_specialization: data.clg_specialization,
+          start_year: data.start_year,
+          end_year: data.end_year,
+          university: data.university,
+          collage: data.collage,
+          clg_percentage: data.clg_percentage,
+        }))
+      );
+
+      console.log('school added successfully');
+
+    }
+    return res.send(httpstatus.successRespone({
+      message: 'Education Details Inserted',
+      
+    }));
+  } catch (error) {
+    return res.send(httpstatus.errorRespone({ message: error.message }));
+  }
+}
+
+
 const AddUserDetails = async (req, res) => {
   try {
     const { insertdata, table, insertMessage, skills,resume } = req.body;
@@ -355,5 +402,6 @@ module.exports = {
   fetchLoopInformation,
   getEditData_HomeAppliance,
   update_HomeAppliance,
-  upload_profileImg
+  upload_profileImg,
+  AddclgSclDeatils
 };

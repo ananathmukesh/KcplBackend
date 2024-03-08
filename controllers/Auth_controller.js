@@ -271,7 +271,13 @@ const Email_OTP_verify = async (req, res) => {
 };
 
 
-
+const Logout = async(req,res) => {
+  try {
+    
+  } catch (error) {
+    
+  }
+}
 
 module.exports = {
   signup,

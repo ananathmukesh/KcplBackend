@@ -1,18 +1,31 @@
+const httpstatus = require('../util/httpstatus');
+const db = require("../database/db");
+const Jwt = require('jsonwebtoken');
 
-const catchAsyncErrors = require("./catchAsyncErrors");
-const Jwt = require("jsonwebtoken");
-const User = require("../model/user");
+const AuthToken = async (req, res, next) => {
+    const authorizationHeader = req.headers.authorization || req.headers.Authorization; // Case-insensitive check
+    console.log('authorizationHeader', authorizationHeader);
 
-exports.isAuthenticate = catchAsyncErrors(async(req,res,next)=>{
-    const {token} = req.cookies;
-
-    if(!token){
-        return next(new ErrorHandler("Please Login to continue", 401));
+    if (!authorizationHeader) {
+        return res.send(httpstatus.errorRespone({ message: "Token is missing" }));
     }
 
-    const decoded = Jwt.verify(token, process.env.JWT_SECRET_KEY);
+    try {
+        // Extract the token from the "Bearer" prefix
+        const token = authorizationHeader.split(' ')[1];
 
-    req.user = await User.findById(decoded.id);
+        const decoded = Jwt.verify(token, process.env.ACTIVATION_SECRET);
+        const user = await db('users').select('*').where({ id: decoded.id }).first();
 
-    next();
-})
+        if (!user) {
+            return res.send(httpstatus.notFoundResponse({ message: "User not found" }));
+        }
+
+        req.user = user;
+        next();
+    } catch (error) {
+        return res.send(httpstatus.invalidResponse({ message: "Invalid token" }));
+    }
+};
+
+module.exports = AuthToken;
