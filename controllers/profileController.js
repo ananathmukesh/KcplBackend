@@ -43,7 +43,7 @@ const contactInformation = async (req, res) => {
       plotnumber,
       plotname
     } = req.body;
-        console.log('ContactInformation',req.body);
+        console.log('ContactInformation',req.body.Street);
        db("ContactInformation")
       .insert({
         userid:userid,
@@ -224,15 +224,18 @@ const update_HomeAppliance = async (req, res) => {
 };
 
 
-const AddclgSclDeatils = async() => {
+const UpdateclgSclDeatils = async (req, res) => {
   try {
     const { schoolDetails,collageDetails,authid } = req.body;
+    await db('SchoolDetails').delete().where({ userid:authid });
+    await db('CollageDetails').delete().where({ userid:authid });
+    console.log('AddclgSclDeatils',req.body);
     if (schoolDetails && schoolDetails.length > 0) {
       await db('SchoolDetails').insert(
         schoolDetails.map((data) => ({
           userid:authid,
           scl_qualification: data.scl_qualification,
-          skiscl_specializationlls: data.scl_specialization,
+          scl_specialization: data.scl_specialization,
           scl_start: data.scl_start,
           scl_end: data.scl_end,
           scl_name: data.scl_name,
@@ -261,9 +264,66 @@ const AddclgSclDeatils = async() => {
       console.log('school added successfully');
 
     }
+
+    const fetch_scldata = await db('SchoolDetails').select('*').where({ userid:authid });
+    const fetch_clgdata = await db('CollageDetails').select('*').where({ userid:authid });
+    return res.send(httpstatus.successRespone({
+      message: 'Education Details Updated Successfully..!',
+      schooldata:fetch_scldata,
+      collagedata:fetch_clgdata
+      
+    }));
+  } catch (error) {
+    return res.send(httpstatus.errorRespone({ message: error.message }));
+  }
+};
+
+
+
+const AddclgSclDeatils = async(req,res) => {
+  try {
+    const { schoolDetails,collageDetails,authid } = req.body;
+    console.log('AddclgSclDeatils',req.body);
+    if (schoolDetails && schoolDetails.length > 0) {
+      await db('SchoolDetails').insert(
+        schoolDetails.map((data) => ({
+          userid:authid,
+          scl_qualification: data.scl_qualification,
+          scl_specialization: data.scl_specialization,
+          scl_start: data.scl_start,
+          scl_end: data.scl_end,
+          scl_name: data.scl_name,
+          scl_percentage: data.scl_percentage
+        }))
+      );
+
+      console.log('school added successfully');
+    }
+
+
+    if (collageDetails && collageDetails.length > 0) {
+      await db('CollageDetails').insert(
+        collageDetails.map((data) => ({
+          userid:authid,
+          clg_course: data.clg_course,
+          clg_specialization: data.clg_specialization,
+          start_year: data.start_year,
+          end_year: data.end_year,
+          university: data.university,
+          collage: data.collage,
+          clg_percentage: data.clg_percentage,
+        }))
+      );
+
+      console.log('school added successfully');
+     
+    }
+    const fetch_scldata = await db('SchoolDetails').select('*').where({ userid:authid });
+    const fetch_clgdata = await db('CollageDetails').select('*').where({ userid:authid });
     return res.send(httpstatus.successRespone({
       message: 'Education Details Inserted',
-      
+      schooldata:fetch_scldata,
+      collagedata:fetch_clgdata
     }));
   } catch (error) {
     return res.send(httpstatus.errorRespone({ message: error.message }));
@@ -391,6 +451,22 @@ const upload_profileImg = async (req, res) => {
 };
 
 
+const fetch_Clg_Scl_details = async(req,res) => {
+ try {
+  const { id } = req.body;
+  const fetch_scldata = await db('SchoolDetails').select('*').where({ userid:id });
+  const fetch_clgdata = await db('CollageDetails').select('*').where({ userid:id });
+
+  return res.send(httpstatus.successRespone({
+    schooldata:fetch_scldata,
+    collagedata:fetch_clgdata
+  }))
+ } catch (error) {
+  return res.send(httpstatus.errorRespone({ message: error.message }));
+ }
+
+}
+
 
 module.exports = {
   contactInformation,
@@ -403,5 +479,7 @@ module.exports = {
   getEditData_HomeAppliance,
   update_HomeAppliance,
   upload_profileImg,
-  AddclgSclDeatils
+  AddclgSclDeatils,
+  fetch_Clg_Scl_details,
+  UpdateclgSclDeatils
 };

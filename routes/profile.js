@@ -11,7 +11,9 @@ const {
   getEditData_HomeAppliance,
   update_HomeAppliance,
   upload_profileImg,
-  AddclgSclDeatils
+  AddclgSclDeatils,
+  fetch_Clg_Scl_details,
+  UpdateclgSclDeatils
     
  } = require('../controllers/profileController');
 
@@ -101,7 +103,10 @@ const upload = multer({ storage: storage });
 
 router.post('/contactinformation',AuthToken,contactInformation);
 router.post('/fetchContactInformation',getContactInformation);
-router.post('/updateContact',ContactUpdate);
+router.post('/addsclClg',AddclgSclDeatils);
+router.post('/fetch_Clg_Scl_details',fetch_Clg_Scl_details);
+router.post('/UpdateclgSclDeatils',UpdateclgSclDeatils);
+router.post('/updateContact',AuthToken,ContactUpdate);
 router.post('/fetchdetails',fetchInformation);
 router.post('/addDetails',upload.single('resume'),AddUserDetails);
 router.post('/updateDetails',UpdateUserDetails);

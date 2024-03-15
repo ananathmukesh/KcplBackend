@@ -4,53 +4,44 @@ const sendToken = require("../middleware/JWT_Token");
 const axios = require("axios");
 const httpstatus = require("../util/httpstatus");
 const sendemail = require("../util/sendMail");
+const sendSms = require('../util/sendSms');
 
-const signup = async (req, res) => {
-  const {
-    name,
-    email,
-    password,
-    fathername,
-    familyname,
-    mobile_no,
-  } = req.body;
-
-  console.log("request:", req.body);
+const signup = async(req, res) => {
+ 
   try {
-    const existingUser = await db("users").where({ email }).first();
-    console.log("existingUser", existingUser);
+    const {
+      name,
+      email,
+      password,
+      fathername,
+      familyname,
+      mobile_no,
+    } = req.body;
+  
+    console.log("request:", req.body);
 
-    // Check if user already exists
-    if (existingUser) {
-      if (existingUser.OTP_verify === "Yes") {
-        return res.send(
-          httpstatus.duplicationResponse({ message: "User already exists" })
-        );
-      } else {
-        // Handle the case where the user exists but email is not verified
-        // Update existing user OTP and send OTP again
-        const otp = generateOTP();
-        const currentTime = new Date();
-        const otpExpiryTime = new Date(currentTime.getTime() + 2 * 60 * 1000);
-        const apiUrl = `http://sms.gooadvert.com/vendorsms/pushsms.aspx?APIKey=V5j6rtU7tkaCyszEWBYlQQ&msisdn=${mobile_no}&sid=KODUKU&msg=Dear Customer, OTP for login on Kodukku is ${otp} and valid for 2 min. Do not share with anyone&fl=0&gwid=2`;
-        const smsResponse = await axios.get(apiUrl);
+    const otp = generateOTP();
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const currentTime = new Date();
+    const otpExpiryTime = new Date(currentTime.getTime() + 2 * 60 * 1000);
 
-        await db("users").where("email", email).update({
-          OTP_no: otp,
-        });
+    const AlredyExist = await db('users').select('*').where({email:email,OTP_verify:"Yes"}).first();
+    if(AlredyExist){
+    return res.send(httpstatus.duplicationResponse({message:'Email already exists.'}));
+    }
 
-        return res.send(
-          httpstatus.successRespone({ message: "OTP resent successfully" })
-        );
-      }
-    } else {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const otp = generateOTP();
-      const currentTime = new Date();
-      const otpExpiryTime = new Date(currentTime.getTime() + 2 * 60 * 1000);
-      const apiUrl = `http://sms.gooadvert.com/vendorsms/pushsms.aspx?APIKey=V5j6rtU7tkaCyszEWBYlQQ&msisdn=${mobile_no}&sid=KODUKU&msg=Dear Customer, OTP for login on Kodukku is ${otp} and valid for 2 min. Do not share with anyone&fl=0&gwid=2`;
+    const otp_mobile = await db('users').select('*').where({ email:email,mobile_no:mobile_no,OTP_verify:"No" }).first();
+    if(otp_mobile){
+      sendSms(mobile_no,otp);
+     const response = await db('users').update({ OTP_no:otp }).where({email:email,mobile_no:mobile_no,OTP_verify:"No"});
+     return res.send(httpstatus.successRespone({
+      message:"Verify the opt..!"
+     }))
+    }
 
-      await db("users").insert({
+    if(!otp_mobile){
+      sendSms(mobile_no,otp);
+      const insertUser = await db('users').insert({
         mobile_no,
         name,
         email,
@@ -61,22 +52,23 @@ const signup = async (req, res) => {
         OTP_no: otp,
         OTP_verify: "No",
       });
-
-      await db("users").where("email", email).update({
-        created_at: currentTime,
-      });
-
-      return res.send(
-        httpstatus.successRespone({ message: "User created successfully" })
-      );
+      return res.send(httpstatus.successRespone({
+        message:"Verify the opt..!"
+       }))
     }
+
+
   } catch (error) {
     console.error("Error creating user:", error);
     return res.send(
-      httpstatus.errorRespone({ message: "Internal server error" })
+      httpstatus.errorRespone({ message: error })
     );
   }
 };
+
+
+
+
 
 const signin = async (req, res) => {
   const { email, password } = req.body;
@@ -271,13 +263,168 @@ const Email_OTP_verify = async (req, res) => {
 };
 
 
-const Logout = async(req,res) => {
+ const updateMailOtp = async(req,res) => {
+   try {
+   const { email } = req.body;
+
+   const currentDate = new Date();
+   const formattedDate = currentDate.toISOString().slice(0, 23).replace('T', ' ');
+   console.log(formattedDate);
+   
+   const getdata = await db('users').select('*').where({ email:email }).first();
+   if(!getdata){
+    return res.send(httpstatus.notFoundResponse({ message: 'Please Enter Your Valid Email...' }));
+   }
+
+    const sixDigitOTP = generateNumericOTP();
+    
+    try {
+      await sendemail({
+        email: email,
+        subject: "Reset Password OTP",
+        message: `Your OTP number is ${sixDigitOTP}`,
+      });
+      await db('users').update({ email_otp:sixDigitOTP,email_verify:'No',updated_at:formattedDate }).where({ email:email });
+      return res.send(
+       httpstatus.successRespone({ message: "Please Check Your email" })
+     );
+
+
+    } catch (error) {
+      console.error("Error sending email:", error);
+      return res.send(
+        httpstatus.errorRespone({ message: "Error Sending Email" })
+      );
+    }
+
+    
+   } catch (error) {
+    return res.send(httpstatus.errorRespone({ message: error.message }));
+   }
+ }
+
+
+ const updateMobileOtp = async(req,res) => {
   try {
-    
+    const sixDigitOTP = generateNumericOTP();
+  const { email,mobile } = req.body;
+
+  const currentDate = new Date();
+  const formattedDate = currentDate.toISOString().slice(0, 23).replace('T', ' ');
+  console.log(formattedDate);
+  
+  const getdata = await db('users').select('*').where({ email:email,mobile_no:mobile }).first();
+  if(!getdata){
+   return res.send(httpstatus.notFoundResponse({ message: 'Please Enter Valid Credentials..' }));
+  }
+  await db('users').update({ mobile_otp:sixDigitOTP,mobile_verify:'No',updated_at:formattedDate }).where({ email:email });
+   
+   sendSms(mobile,sixDigitOTP);
+   return res.send(
+    httpstatus.successRespone({ message: "Please Check Your SMS" })
+  );
+
   } catch (error) {
-    
+   return res.send(httpstatus.errorRespone({ message: error.message }));
   }
 }
+
+
+ const validateEmailOtp = async(req,res) => {
+  try {
+    const { email,otp } = req.body;
+    console.log('validate otp',req.body);
+    const validateEmail = await db('users').select('*').where({ email:email,email_otp:otp }).first();
+   
+    if(!validateEmail){
+      return res.send(
+        httpstatus.errorRespone({ message: "Please Enter Valid Otp" })
+      );
+      
+    }
+    await db('users').update({ email_verify:"Yes" }).where({ email_otp:otp,email:email });
+    return res.send(
+      httpstatus.successRespone({ message: "OTP Verified Successfully" })
+    );
+  } catch (error) {
+    return res.send(httpstatus.errorRespone({ message: error.message }));
+  }
+ }
+
+
+ const validateMobileOtp = async(req,res) => {
+  try {
+    const { mobile,otp } = req.body;
+    const validateMobile = await db('users').select('*').where({ mobile_no:mobile,mobile_otp:otp }).first();
+   
+    if(!validateMobile){
+      return res.send(
+        httpstatus.errorRespone({ message: "Please Enter Valid Otp" })
+      );
+      
+    }
+    await db('users').update({ mobile_verify:"Yes" }).where({ mobile_otp:otp,mobile_no:mobile });
+    return res.send(
+      httpstatus.successRespone({ message: "OTP Verified Successfully" })
+    );
+  } catch (error) {
+    return res.send(httpstatus.errorRespone({ message: error.message }));
+  }
+ }
+
+ const changePasswordRequest = async(req,res) => {
+  try {
+     const { email,mobile,password,dob } = req.body;
+     const hashedPassword = await bcrypt.hash(password, 10);
+
+     const fetchUser = await db('users').select('*').where({email:email,mobile_no:mobile,dob:dob}).first();
+     if(!fetchUser){
+      return res.send(
+        httpstatus.errorRespone({ message: "Please Enter Valid Dob" })
+      );
+     }
+     
+     await db('users').update({ password:hashedPassword }).where({ email:email,mobile_no:mobile });
+     return res.send(
+      httpstatus.successRespone({ message: "Password Reset Successfully.." })
+    );
+  } catch (error) {
+    return res.send(httpstatus.errorRespone({ message: error.message }));
+  }
+ }
+
+
+  const update_time_otp = async(req,res) => {
+    try {
+      const { email,mobile,data } = req.body;
+      const OTP = generateNumericOTP();
+
+      if(data == 'completetime'){
+        await db('users').update({email_otp:'NULL'}).where({ email:email });
+      }
+
+      if(data == 'completeMobileTime'){
+        await db('users').update({mobile_otp:'NULL'}).where({ mobile_no:mobile });
+      }
+      if(data == 'email'){
+        await sendemail({
+          email: email,
+          subject: "Reset Password OTP",
+          message: `Your OTP number is ${OTP}`,
+        });
+        await db('users').update({email_otp:OTP}).where({ email:email });
+      }
+    
+      if(data == 'mobile'){
+        sendSms(mobile,OTP);
+        await db('users').update({mobile_otp:OTP}).where({ email:email,mobile_no:mobile });
+      }
+
+    } catch (error) {
+      return res.send(httpstatus.errorRespone({ message: error.message }));
+    }
+  }
+
 
 module.exports = {
   signup,
@@ -286,6 +433,11 @@ module.exports = {
   otp_verify,
   resetPassword,
   Email_OTP,
-  Email_OTP_verify
-  
+  Email_OTP_verify,
+  updateMailOtp,
+  validateEmailOtp,
+  updateMobileOtp,
+  validateMobileOtp,
+  changePasswordRequest,
+  update_time_otp
 };
