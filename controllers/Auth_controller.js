@@ -5,6 +5,7 @@ const axios = require("axios");
 const httpstatus = require("../util/httpstatus");
 const sendemail = require("../util/sendMail");
 const sendSms = require('../util/sendSms');
+const { DateTime } = require('luxon');
 
 const signup = async(req, res) => {
  
@@ -277,14 +278,19 @@ const Email_OTP_verify = async (req, res) => {
    }
 
     const sixDigitOTP = generateNumericOTP();
-    
+    const currentTimeUTC = new Date();
+
+// Convert UTC to Indian Standard Time (IST)
+const ISTOffset = 5.5 * 60 * 60 * 1000;
+const indianTime = new Date(currentTimeUTC.getTime() + ISTOffset);
+   console.log('indianTime',indianTime)
     try {
       await sendemail({
         email: email,
         subject: "Reset Password OTP",
         message: `Your OTP number is ${sixDigitOTP}`,
       });
-      await db('users').update({ email_otp:sixDigitOTP,email_verify:'No',updated_at:formattedDate }).where({ email:email });
+      await db('users').update({ email_otp:sixDigitOTP,email_verify:'No',updated_at:indianTime.toISOString().slice(0, 19).replace('T', ' ') }).where({ email:email });
       return res.send(
        httpstatus.successRespone({ message: "Please Check Your email" })
      );
@@ -317,7 +323,7 @@ const Email_OTP_verify = async (req, res) => {
   if(!getdata){
    return res.send(httpstatus.notFoundResponse({ message: 'Please Enter Valid Credentials..' }));
   }
-  await db('users').update({ mobile_otp:sixDigitOTP,mobile_verify:'No',updated_at:formattedDate }).where({ email:email });
+  await db('users').update({ mobile_otp:sixDigitOTP,mobile_verify:'No',updated_at:db.raw('GETDATE()') }).where({ email:email });
    
    sendSms(mobile,sixDigitOTP);
    return res.send(
@@ -334,19 +340,44 @@ const Email_OTP_verify = async (req, res) => {
   try {
     const { email,otp } = req.body;
     console.log('validate otp',req.body);
-    const validateEmail = await db('users').select('*').where({ email:email,email_otp:otp }).first();
-   
+    const validateEmail = await db('users')
+    .select('*', db.raw("CONVERT(varchar, updated_at, 120) AS formatted_date"))
+    .where({ email: email, email_otp: otp })
+    .first();
+  
+     
     if(!validateEmail){
       return res.send(
         httpstatus.errorRespone({ message: "Please Enter Valid Otp" })
       );
       
     }
-    await db('users').update({ email_verify:"Yes" }).where({ email_otp:otp,email:email });
-    return res.send(
-      httpstatus.successRespone({ message: "OTP Verified Successfully" })
-    );
+
+    const allowedEditingTime = 2; // 2 minutes
+    const currentTime = new Date();
+    const createdAt = new Date(validateEmail.formatted_date);
+
+    // Calculate the time difference in minutes
+    const timeDifferenceInMilliseconds = currentTime - createdAt;
+    const timeDifferenceInMinutes = Math.floor(timeDifferenceInMilliseconds / (1000 * 60));
+    
+    
+    if (timeDifferenceInMinutes <= allowedEditingTime) {
+      // Within allowed editing time
+      await db('users').update({ email_verify: "Yes" }).where({ email_otp: otp, email: email });
+      return res.send(httpstatus.successRespone({ message: "OTP Verified Successfully",createdAt:currentTime }));
+    } else {
+      // Beyond allowed editing time
+      return res.send(httpstatus.errorRespone({ message: "Please Enter Valid OTP expiry" }));
+      console.log('createdAt:', createdAt);
+    
+    }
+    
+
+    
   } catch (error) {
+    console.log('createdAt:', 'createdAt');
+    
     return res.send(httpstatus.errorRespone({ message: error.message }));
   }
  }
@@ -355,18 +386,40 @@ const Email_OTP_verify = async (req, res) => {
  const validateMobileOtp = async(req,res) => {
   try {
     const { mobile,otp } = req.body;
-    const validateMobile = await db('users').select('*').where({ mobile_no:mobile,mobile_otp:otp }).first();
-   
+    const validateMobile = await db('users')
+    .select('*', db.raw("CONVERT(varchar, updated_at, 120) AS formatted_date"))
+    .where({ mobile_no:mobile,mobile_otp:otp })
+    .first();
     if(!validateMobile){
       return res.send(
         httpstatus.errorRespone({ message: "Please Enter Valid Otp" })
       );
       
     }
-    await db('users').update({ mobile_verify:"Yes" }).where({ mobile_otp:otp,mobile_no:mobile });
-    return res.send(
-      httpstatus.successRespone({ message: "OTP Verified Successfully" })
-    );
+
+    const allowedEditingTime = 2; // 2 minutes
+    const currentTime = new Date();
+    const createdAt = new Date(validateMobile.formatted_date);
+
+    // Calculate the time difference in minutes
+    const timeDifferenceInMilliseconds = currentTime - createdAt;
+    const timeDifferenceInMinutes = Math.floor(timeDifferenceInMilliseconds / (1000 * 60));
+    
+    
+    if (timeDifferenceInMinutes <= allowedEditingTime) {
+      // Within allowed editing time
+      await db('users').update({ mobile_verify:"Yes" }).where({ mobile_otp:otp,mobile_no:mobile });
+      return res.send(
+        httpstatus.successRespone({ message: "OTP Verified Successfully" })
+      );
+    } else {
+      // Beyond allowed editing time
+      return res.send(httpstatus.errorRespone({ message: "Please Enter Valid OTP expiry" }));
+   
+    }
+
+
+    
   } catch (error) {
     return res.send(httpstatus.errorRespone({ message: error.message }));
   }
@@ -426,6 +479,38 @@ const Email_OTP_verify = async (req, res) => {
   }
 
 
+  const resendMailOtp = async(req, res) => {
+    const { email } = req.body;
+    const OTP = generateNumericOTP();
+    try {
+      await sendemail({
+        email: email,
+        subject: "Reset Password OTP",
+        message: `Your OTP number is ${OTP}`,
+      });
+      await db('users').update({email_otp:OTP,updated_at:db.raw('GETDATE()')}).where({email:email});
+      return res.send(
+        httpstatus.successRespone({ message: "Mail Resend Successfully..." })
+      );
+    } catch (error) {
+      return res.send(httpstatus.errorRespone({ message: error.message }));
+    }
+  }
+
+  const resendMobileOtp = async(req, res) => {
+    const { email,mobile } = req.body;
+    const OTP = generateNumericOTP();
+    try {
+      sendSms(mobile,OTP);
+      await db('users').update({mobile_otp:OTP,updated_at:db.raw('GETDATE()')}).where({email:email});
+      return res.send(
+        httpstatus.successRespone({ message: "Sms Resend Successfully..." })
+      );
+    } catch (error) {
+      return res.send(httpstatus.errorRespone({ message: error.message }));
+    }
+  }
+
 module.exports = {
   signup,
   signin,
@@ -439,5 +524,7 @@ module.exports = {
   updateMobileOtp,
   validateMobileOtp,
   changePasswordRequest,
-  update_time_otp
+  update_time_otp,
+  resendMailOtp,
+  resendMobileOtp
 };
