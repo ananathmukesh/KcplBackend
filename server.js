@@ -59,6 +59,9 @@ try {
   .catch((error) => {
     console.log('Error connecting to the database:', error);
   });
+  server.listen(8001, () => {
+    console.log('SERVER IS RUNNING 8001');
+})
 
 } catch (error) {
   console.log(error);
@@ -69,6 +72,3 @@ try {
 
 
 
-server.listen(8001, () => {
-    console.log('SERVER IS RUNNING 8001');
-})
