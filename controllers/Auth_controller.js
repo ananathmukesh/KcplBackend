@@ -304,7 +304,7 @@ const indianTime = new Date(currentTimeUTC.getTime() + ISTOffset);
     } catch (error) {
       console.error("Error sending email:", error);
       return res.send(
-        httpstatus.errorRespone({ message: "Error Sending Email" })
+        httpstatus.errorRespone({ message: error.message })
       );
     }
 
