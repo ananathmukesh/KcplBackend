@@ -8,7 +8,9 @@ const {signup,signin,sendOTP,otp_verify,resetPassword,Email_OTP,Email_OTP_verify
     changePasswordRequest,
     update_time_otp,
     resendMailOtp,
-    resendMobileOtp
+    resendMobileOtp,
+    validateLoginMobileOtp,
+    resendSignupOtp
 } = require('../controllers/Auth_controller')
 
 
@@ -27,5 +29,7 @@ router.post('/reset_password',changePasswordRequest)
 router.post('/resend_otp',update_time_otp)
 router.post('/sendMail',resendMailOtp)
 router.post('/sendMobile',resendMobileOtp)
+router.post('/verifyOtp',validateLoginMobileOtp)
+router.post('/resendsignupotp',resendSignupOtp)
 
 module.exports = router;

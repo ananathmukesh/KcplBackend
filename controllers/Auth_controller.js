@@ -5,7 +5,8 @@ const axios = require("axios");
 const httpstatus = require("../util/httpstatus");
 const sendemail = require("../util/sendMail");
 const sendSms = require('../util/sendSms');
-const { DateTime } = require('luxon');
+const moment = require('moment');
+const jwt = require("jsonwebtoken");
 
 const signup = async(req, res) => {
  
@@ -17,6 +18,7 @@ const signup = async(req, res) => {
       fathername,
       familyname,
       mobile_no,
+      dob
     } = req.body;
   
     console.log("request:", req.body);
@@ -34,11 +36,13 @@ const signup = async(req, res) => {
     const otp_mobile = await db('users').select('*').where({ email:email,mobile_no:mobile_no,OTP_verify:"No" }).first();
     if(otp_mobile){
       sendSms(mobile_no,otp);
-     const response = await db('users').update({ OTP_no:otp }).where({email:email,mobile_no:mobile_no,OTP_verify:"No"});
+     const response = await db('users').update({ OTP_no:otp,updated_at:db.raw('GETDATE()') }).where({email:email,mobile_no:mobile_no,OTP_verify:"No"});
      return res.send(httpstatus.successRespone({
       message:"Verify the opt..!"
      }))
     }
+    const parsedDate = moment(dob);
+    const formattedDob = parsedDate.format("YYYY-MM-DD");
 
     if(!otp_mobile){
       sendSms(mobile_no,otp);
@@ -52,6 +56,7 @@ const signup = async(req, res) => {
         OTP_expiry: otpExpiryTime,
         OTP_no: otp,
         OTP_verify: "No",
+        dob:formattedDob
       });
       return res.send(httpstatus.successRespone({
         message:"Verify the opt..!"
@@ -425,6 +430,56 @@ const indianTime = new Date(currentTimeUTC.getTime() + ISTOffset);
   }
  }
 
+
+ const validateLoginMobileOtp = async(req,res) => {
+  try {
+    const { email,otp } = req.body;
+    const validateMobile = await db('users')
+    .select('*', db.raw("CONVERT(varchar, updated_at, 120) AS formatted_date"))
+    .where({ email:email,OTP_no:otp })
+    .first();
+    if(!validateMobile){
+      return res.send(
+        httpstatus.errorRespone({ message: "Please Enter Valid Otp" })
+      );
+      
+    }
+
+    const allowedEditingTime = 2; // 2 minutes
+    const currentTime = new Date();
+    const createdAt = new Date(validateMobile.formatted_date);
+
+    // Calculate the time difference in minutes
+    const timeDifferenceInMilliseconds = currentTime - createdAt;
+    const timeDifferenceInMinutes = Math.floor(timeDifferenceInMilliseconds / (1000 * 60));
+    
+    
+    if (timeDifferenceInMinutes <= allowedEditingTime) {
+      // Within allowed editing time
+      await db('users').update({ OTP_verify:"Yes" }).where({ email:email,OTP_no:otp });
+      delete validateMobile.password;
+      const token = jwt.sign(validateMobile, process.env.ACTIVATION_SECRET, {
+        expiresIn: "1h",
+      }); 
+      return res.send(
+        httpstatus.successRespone({ message: "OTP Verified Successfully",user:{
+          user:validateMobile,
+          token:token
+        } })
+      );
+    } else {
+      // Beyond allowed editing time
+      return res.send(httpstatus.errorRespone({ message: "Please Enter Valid OTP expiry" }));
+   
+    }
+
+
+    
+  } catch (error) {
+    return res.send(httpstatus.errorRespone({ message: error.message }));
+  }
+ }
+
  const changePasswordRequest = async(req,res) => {
   try {
      const { email,mobile,password,dob } = req.body;
@@ -511,6 +566,22 @@ const indianTime = new Date(currentTimeUTC.getTime() + ISTOffset);
     }
   }
 
+
+  const resendSignupOtp = async(req, res) => {
+    const { email,mobile } = req.body;
+    const OTP = generateNumericOTP();
+    try {
+      sendSms(mobile,OTP);
+      await db('users').update({OTP_no:OTP,updated_at:db.raw('GETDATE()')}).where({email:email});
+      return res.send(
+        httpstatus.successRespone({ message: "Sms Resend Successfully..." })
+      );
+    } catch (error) {
+      return res.send(httpstatus.errorRespone({ message: error.message }));
+    }
+  }
+
+
 module.exports = {
   signup,
   signin,
@@ -526,5 +597,7 @@ module.exports = {
   changePasswordRequest,
   update_time_otp,
   resendMailOtp,
-  resendMobileOtp
+  resendMobileOtp,
+  validateLoginMobileOtp,
+  resendSignupOtp
 };

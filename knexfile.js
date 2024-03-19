@@ -28,8 +28,8 @@ require('dotenv').config();
 module.exports = {
   client: 'mssql',
   connection: {
-    server: 'KGMUKESH',
-    user: 'kgmukeshkanna',
+    server: 'DESKTOP-SKTGI2Q',
+    user: 'mukeshkanna',
     password: 'leo45gkm',
     database: 'kcpl_test',
     charset: 'utf8',
