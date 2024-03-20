@@ -239,7 +239,8 @@ const UpdateclgSclDeatils = async (req, res) => {
           scl_start: data.scl_start,
           scl_end: data.scl_end,
           scl_name: data.scl_name,
-          scl_percentage: data.scl_percentage
+          scl_percentage: data.scl_percentage,
+          scl_section: data.scl_section
         }))
       );
 
@@ -258,6 +259,7 @@ const UpdateclgSclDeatils = async (req, res) => {
           university: data.university,
           collage: data.collage,
           clg_percentage: data.clg_percentage,
+          clg_section:data.clg_section
         }))
       );
 
@@ -293,7 +295,8 @@ const AddclgSclDeatils = async(req,res) => {
           scl_start: data.scl_start,
           scl_end: data.scl_end,
           scl_name: data.scl_name,
-          scl_percentage: data.scl_percentage
+          scl_percentage: data.scl_percentage,
+          scl_section: data.scl_section
         }))
       );
 
@@ -312,6 +315,7 @@ const AddclgSclDeatils = async(req,res) => {
           university: data.university,
           collage: data.collage,
           clg_percentage: data.clg_percentage,
+          clg_section: data.clg_section
         }))
       );
 
