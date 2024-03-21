@@ -425,12 +425,21 @@ const upload_profileImg = async (req, res) => {
         const returnData = upload_profile_img[0];
         const users = await db('users').select('*').where({ id:id }).first();
         if (upload_profile_img) {
-          return res.send(
-            httpstatus.successRespone({ message: "Profile Image Upload Successfully..!",image:returnData.profile_image,user:{
-              user:users,
+      
+          return res.status(200).json({
+            message: "Profile Image Upload Successfully..!",
+            success: true,
+            code:200,
+            user:{
+              id:users.id,
+              name:users.name,
+              email:users.email,
+              mobile_no:users.mobile_no,
+              profile_image:users.profile_image,
               token:token
-            } })
-          );
+            },
+            
+          });
         } else {
           return res.send(
             httpstatus.errorRespone({ message: "Image Upload Error..!" })

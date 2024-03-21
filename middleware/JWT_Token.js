@@ -10,22 +10,22 @@ const sendToken = (user, statusCode, res) => {
   }); 
 
   console.log('token ');
-  
 
-  const options = {
-    expires: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes in milliseconds
-    httpOnly: true,
-  };
-  res.cookie('authToken', token, options);
-   console.log('options',options);
+ 
   return res.status(statusCode).json({
     message: "Successfully Loged",
     success: true,
     code:200,
     user:{
-      user:user,
+      id:user.id,
+      name:user.name,
+      email:user.email,
+      mobile_no:user.mobile_no,
+      profile_image:user.profile_image,
       token:token
     },
+    
+
     
   });
 };

@@ -28,8 +28,8 @@ module.exports = {
 // module.exports = {
 //   client: 'mssql',
 //   connection: {
-//     server: 'DESKTOP-SKTGI2Q',
-//     user: 'mukeshkanna',
+//     server: 'KGMUKESH',
+//     user: 'kgmukeshkanna',
 //     password: 'leo45gkm',
 //     database: 'kcpl_test',
 //     charset: 'utf8',

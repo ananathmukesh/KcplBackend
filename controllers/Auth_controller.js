@@ -92,8 +92,14 @@ const signin = async (req, res) => {
         httpstatus.invalidResponse({ error: "Invalid Email or Password" })
       );
     }
-    delete user.password;
-    sendToken(user, 201, res);
+    const loginuser = {
+      id:user.id,
+      name:user.name,
+      email:user.email,
+      mobile_no:user.mobile_no,
+      profile_image:user.profile_image
+    }
+    sendToken(loginuser, 201, res);
   } catch (error) {
     res.send(httpstatus.errorRespone({ message: "Internal server error" }));
   }
