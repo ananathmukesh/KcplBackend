@@ -34,7 +34,7 @@ try {
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
   
-  app.use('/assets', express.static(path.resolve(__dirname, 'assets/UserProfileImage')));
+  app.use('/assets', express.static(path.static(__dirname, 'assets/UserProfileImage')));
 
 
   app.use('/api',profilerouter);
