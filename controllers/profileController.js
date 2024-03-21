@@ -406,11 +406,11 @@ const UpdateUserDetails = async (req, res) => {
 
 const upload_profileImg = async (req, res) => {
   try {
-    const { id } = req.body;
-
+    const { id,token } = req.body;
+     console.log('update profierl',req.body);
     // Fetch user data from the database
     const fetchData = await db('users').select('profile_image').where({ id: id }).first();
-
+    console.log('fetchData.profile_image',fetchData.profile_image);
     if (fetchData) {
       const folderPath = path.join(__dirname, '../assets/UserProfileImage', fetchData.profile_image);
       console.log(folderPath);
@@ -420,11 +420,16 @@ const upload_profileImg = async (req, res) => {
 
       // Update the profile image in the database
       if(req.file){
+        console.log('inside come page request file');
         const upload_profile_img = await db('users').update({ profile_image: req.file.filename }).where({ id: id }).returning('profile_image');
         const returnData = upload_profile_img[0];
+        const users = await db('users').select('*').where({ id:id }).first();
         if (upload_profile_img) {
           return res.send(
-            httpstatus.successRespone({ message: "Profile Image Upload Successfully..!",image:returnData.profile_image })
+            httpstatus.successRespone({ message: "Profile Image Upload Successfully..!",image:returnData.profile_image,user:{
+              user:users,
+              token:token
+            } })
           );
         } else {
           return res.send(
@@ -453,7 +458,6 @@ const upload_profileImg = async (req, res) => {
     return res.send(httpstatus.errorRespone({ message: error.message }));
   }
 };
-
 
 const fetch_Clg_Scl_details = async(req,res) => {
  try {
